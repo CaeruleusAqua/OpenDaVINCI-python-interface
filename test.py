@@ -29,7 +29,7 @@ def testImageCallback(image,timeStamps):
     cv2.waitKey(1)
 
 
-node = DVnode.DVnode(cid=33)
+node = DVnode.DVnode(cid=111)
 node.registerCallback(400, testCallback,comma_pb2.HDF)
 node.registerImageCallback("cam0",testImageCallback)
 node.connect()
