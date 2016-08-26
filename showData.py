@@ -16,21 +16,28 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import DVnode
-import comma_pb2
 import cv2
 
-def testCallback(container,timeStamps):
-    print timeStamps[0]
-    print container
+import DVnode
+import comma_pb2
 
-def testImageCallback(image,timeStamps):
+
+def testCallback(msg, timeStamps):
+    print timeStamps[0]
+    print ""
+    print msg
+    print ""
+    print node.getKnownMessageIDs()
+    print ""
+
+
+def testImageCallback(image, timeStamps):
     cv2.imshow('image', image)
     cv2.waitKey(1)
 
 
 node = DVnode.DVnode(cid=111)
-node.registerCallback(400, testCallback,comma_pb2.HDF)
-node.registerImageCallback("cam0",testImageCallback)
+node.registerCallback(400, testCallback, comma_pb2.HDF)
+node.registerImageCallback("cam0", testImageCallback)
 node.connect()
 node.spin()
