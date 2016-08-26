@@ -57,7 +57,7 @@ class DVnode:
 
     def registerImageCallback(self, name, func, params=()):
         assert hasattr(func, '__call__')
-        self.imageCallbacks[name] = (func, params)
+        self.imageCallbacks[str(name)] = (func, params)
 
     @staticmethod
     def __getCRC32(string):
