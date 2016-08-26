@@ -22,6 +22,7 @@ import socket
 import struct
 import sysv_ipc
 import thread
+import datetime
 
 import comma_pb2
 
@@ -99,13 +100,17 @@ class DVnode:
                     if container.dataType in self.callbacks.keys():
                         msg = self.callbacks[container.dataType][1]()
                         msg.ParseFromString(container.serializedData)
-                        timestamps = [container.sent, container.received]
+                        send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(microseconds=container.sent.microseconds)
+                        received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(microseconds=container.received.microseconds)
+                        timestamps = [send, received]
                         thread.start_new_thread(self.callbacks[container.dataType][0], (msg, timestamps) + (self.callbacks[container.dataType][2]))
 
                     if container.dataType == 14:
                         msg = comma_pb2.SharedImage()
                         msg.ParseFromString(container.serializedData)
-                        timestamps = [container.sent, container.received]
+                        send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(microseconds=container.sent.microseconds)
+                        received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(microseconds=container.received.microseconds)
+                        timestamps = [send, received]
                         if msg.name in self.imageCallbacks.keys():
                             thread.start_new_thread(self.__threadedImageConverter, (msg, timestamps, self.imageCallbacks[msg.name]))
 
