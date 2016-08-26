@@ -16,15 +16,19 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import DVnode
-import comma_pb2
 import cv2
 
+import DVnode
+import comma_pb2
 
-def testCallback(container, timeStamps):
+
+def testCallback(msg, timeStamps):
     print timeStamps[0]
-    print container
+    print ""
+    print msg
+    print ""
     print node.getKnownMessageIDs()
+    print ""
 
 
 def testImageCallback(image, timeStamps):
@@ -33,7 +37,7 @@ def testImageCallback(image, timeStamps):
 
 
 node = DVnode.DVnode(cid=111)
-node.registerCallback(400, testCallback,comma_pb2.HDF)
-node.registerImageCallback("cam0",testImageCallback)
+node.registerCallback(400, testCallback, comma_pb2.HDF)
+node.registerImageCallback("cam0", testImageCallback)
 node.connect()
 node.spin()
