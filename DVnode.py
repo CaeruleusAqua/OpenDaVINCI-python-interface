@@ -71,7 +71,7 @@ class DVnode:
 
     def __threadedImageConverter(self, msg, stapms, callback):
         name = "/" + msg.name.replace("/", "_")
-        sem = posix_ipc.Semaphore(name)
+        sem = posix_ipc.Semaphore(str(name))
         sm = sysv_ipc.SharedMemory(self.__getCRC32(name))
         sem.acquire()
         try:
