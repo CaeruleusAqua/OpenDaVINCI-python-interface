@@ -14,6 +14,7 @@ The following tutorial describes how to work with data using the Python bindings
 3. Go to OpenDaVINCI/docker and build OpenDaVINCI Docker image:
 
     $ cd OpenDaVINCI/docker
+
     $ make
 
 4. Download an example recording file based on the comma.ai dataset (https://github.com/commaai/research): http://www.cse.chalmers.se/~bergerc/example.tar
@@ -41,6 +42,7 @@ The following tutorial describes how to work with data using the Python bindings
 5. Go to python-opendavinci and compile the message definition:
 
     $ cd python-opendavinci
+
     $ protoc --python_out=. comma.proto
 
 ### Test the python-opendavinci bindings
@@ -52,6 +54,7 @@ The following tutorial describes how to work with data using the Python bindings
 2. In Terminal 2, run the OpenDaVINCI visualization environment odcockpit (the first command grants access to your Xserver):
 
     $ xhost +
+
     $ docker run -ti --rm --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $HOME/example:/opt/HOST -w /opt/HOST seresearch/opendavinci-ubuntu-16.04-complete /opt/od4/bin/odcockpit --cid=111 --verbose=1
 
 3. In the odcockpit window, start plugins LiveFeed, Player, SharedImageViewer. In the Player plugin, load the downloaded recording file that is mapped to /opt/HOST/recorder.rec in the odcockpit Docker container. Then click the "Play" button in the Player plugin. The video will be replayed in SharedImageViewer.
