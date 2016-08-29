@@ -61,7 +61,8 @@ In Terminal 3, go to python-opendavinci and run the Python script:
 
 Then Terminal 3 shall show data dump from the video. Meanwhile, the video will be replayed in a new pop-up window in addition to SharedImageViewer in odcockpit.
 
-.. image:: pythonBindingTest.jpg
+![Screenshot](https://github.com/se-research-studies/python-opendavinci/pythonBindingTest.jpg)
+
 
 
 
