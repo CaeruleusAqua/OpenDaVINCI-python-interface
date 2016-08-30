@@ -47,19 +47,19 @@ The following tutorial describes how to work with data using the Python bindings
 
 ### Test the python-opendavinci bindings
 
-In Terminal 1, run odsupercomponent for the software component lifecycle management in OpenDaVINCI::
+    1. In Terminal 1, run odsupercomponent for the software component lifecycle management in OpenDaVINCI::
 
     $ docker run -ti --rm --net=host /seresearch/opendavinci-ubuntu-16.04-complete /opt/od4/bin/odsupercomponent --cid=111 --verbose=1
 
-2. In Terminal 2, run the OpenDaVINCI visualization environment odcockpit (the first command grants access to your Xserver)::
+    2. In Terminal 2, run the OpenDaVINCI visualization environment odcockpit (the first command grants access to your Xserver)::
 
     $ xhost +
 
     $ docker run -ti --rm --net=host --ipc=host -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix -v $HOME/example:/opt/HOST -w /opt/HOST seresearch/opendavinci-ubuntu-16.04-complete /opt/od4/bin/odcockpit --cid=111 --verbose=1
 
-3. In the odcockpit window, start plugins LiveFeed, Player, SharedImageViewer. In the Player plugin, load the downloaded recording file that is mapped to /opt/HOST/recorder.rec in the odcockpit Docker container. Then click the "Play" button in the Player plugin. The video will be replayed in SharedImageViewer.
+    3. In the odcockpit window, start plugins LiveFeed, Player, SharedImageViewer. In the Player plugin, load the downloaded recording file that is mapped to /opt/HOST/recorder.rec in the odcockpit Docker container. Then click the "Play" button in the Player plugin. The video will be replayed in SharedImageViewer.
 
-4. In Terminal 3, go to python-opendavinci and run the Python script::
+    4. In Terminal 3, go to python-opendavinci and run the Python script::
 
     $ python showData.py
 
