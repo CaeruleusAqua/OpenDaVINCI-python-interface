@@ -47,7 +47,7 @@ The following tutorial describes how to work with data using the Python bindings
 
 ### Test the python-opendavinci bindings
 
-1. In Terminal 1, run odsupercomponent for the software component lifecycle management in OpenDaVINCI::
+In Terminal 1, run odsupercomponent for the software component lifecycle management in OpenDaVINCI::
 
     $ docker run -ti --rm --net=host /seresearch/opendavinci-ubuntu-16.04-complete /opt/od4/bin/odsupercomponent --cid=111 --verbose=1
 
