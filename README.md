@@ -25,7 +25,7 @@ The following tutorial describes how to work with data using the Python bindings
 
 1. Install Python. Python should already been installed by default on Ubuntu 16.04. Otherwise, run
 
-    $ sudo apt-get install Python
+    $ sudo apt-get install python
 
 2. Install Python libraries:
 
