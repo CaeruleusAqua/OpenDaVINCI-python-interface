@@ -15,6 +15,11 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+"""This module handles the whole communication with the OpenDaVINCI middleware"""
+
+__license__ = "GNU General Public License"
+__docformat__ = 'reStructuredText'
+
 import datetime
 import posix_ipc
 import signal
@@ -30,6 +35,11 @@ import opendavinci_pb2
 
 
 class DVnode:
+    """This class handles the whole communication with the OpenDaVINCI middleware
+
+    You can create multiple objects of the class with different cid's (or equal). So you can easily transmit data between two cid spaces.
+    """
+
     def __init__(self, cid, port=12175):
         assert cid <= 255
         self.MCAST_PORT = port
@@ -43,6 +53,9 @@ class DVnode:
         self.sock = None
 
     def connect(self):
+        """
+        Needs to be called to receive or publish any data.
+        """
         assert not self.connected
         # open UDP multicast socect
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM, socket.IPPROTO_UDP)
@@ -56,6 +69,15 @@ class DVnode:
             self.run = True
 
     def publish(self, container):
+        """
+        Publishes data using OpenDaVINCI, this is the python equivalent to getConference().send(container);
+
+
+        Parameters
+        ----------
+        container : opendavinci_pb2.odcore_data_MessageContainer
+            container to publish
+        """
         data = container.SerializeToString()
         header = self.__get_od_header(len(data))
         tosend = header + data
@@ -64,23 +86,88 @@ class DVnode:
     @staticmethod
     def __get_od_header(size):
         a = struct.pack("<B", *bytearray([0x0D, ]))
-        b = struct.pack("<L", ((size & 0xFFFFFF) << 8) | (0xA4))
-        return a+b
-
+        b = struct.pack("<L", ((size & 0xFFFFFF) << 8) | 0xA4)
+        return a + b
 
     def registerCallback(self, msgID, func, msgType, params=()):
+        """
+        Registers a new Callback function
+
+        Minimum callback function declaration should look like:
+            def callback(msg, timeStamps):
+
+        but can also be extended eg:
+            def callback(msg, timeStamps, x, y, z):
+        in this case x,y,z should be forwarded using the params parameter:
+            dvnode.registerCallback(msgID, callback, msgType, params=(x,y,z)):
+
+
+        Parameters
+        ----------
+        msgID : int
+            Message identifier from the ODVD or Protobuf file.
+        func : function
+            Callback function to be called
+        msgType : google.protobuf.pyext.cpp_message
+            Expected message type to given msgID
+        params : tuple
+            should contain all other parameters which should be forwarded to the callback function
+        """
         assert hasattr(func, '__call__')
         self.callbacks[msgID] = (func, msgType, params)
 
     def registerContainerCallback(self, func):
+        """
+        Registers a new Callback function, but callback receives container and you have to deserialize the message by yourself,
+        usefull if you want to record the data  using the writeToFile function
+
+        Minimum callback function declaration should look like:
+            def containerCallback(container)
+
+        Parameters
+        ----------
+        func : function
+            Callback function to be called
+        """
+        assert hasattr(func, '__call__')
         self.containerCallbacks.append(func)
 
     def registerImageCallback(self, name, func, params=()):
+        """
+        Registers a new Callback function, but directly decodes the image message to an numpy array, which can easy used with openCV
+
+        Minimum callback function declaration should look like:
+            def imageCallback(image, timeStamps)
+        but can also be extended eg:
+            def imageCallback(image, timeStamps, x, y, z):
+        in this case x,y,z should be forwarded using the params parameter:
+            dvnode.registerImageCallback("image_name", callback, params=(x,y,z)):
+
+        Parameters
+        ----------
+        name : string
+            the name of the Video stream to receive
+        func : function
+            Callback function to be called
+        params : tuple
+            should contain all other parameters which should be forwarded to the callback function
+        """
         assert hasattr(func, '__call__')
         self.imageCallbacks[str(name)] = (func, params)
 
     @staticmethod
     def writeToFile(container, filename):
+        """
+        Writes given container to File and automatically add the OpenDaVINCI recording header.
+        Repeated call will append the Data to the file. If you want a fresh recording you need to delete the file manually
+
+        Parameters
+        ----------
+        container : opendavinci_pb2.odcore_data_MessageContainer
+           container to write
+        filename : string
+           file to write into
+        """
         buf = container.SerializeToString()
         with open(filename, "ab") as myfile:
             size = len(buf)
@@ -99,7 +186,7 @@ class DVnode:
 
         return retVal
 
-    def __threadedImageConverter(self, msg, stapms, callback):
+    def __threadedImageConverter(self, msg, stamps, callback):
         # FIXME: incorporate _POSIX_NAME_MAX if available instead of constant 14, also the fallback to 12 if not defined
         MAX_NAME_LENGTH = 14
         name = str("/" + msg.name.replace("/", "_"))[:MAX_NAME_LENGTH]
@@ -114,7 +201,7 @@ class DVnode:
             sem.close()
 
         tmp = np.frombuffer(image, np.uint8).reshape(msg.height, msg.width, msg.bytesPerPixel)
-        callback[0](tmp, stapms, *callback[1])
+        callback[0](tmp, stamps, *callback[1])
 
     def __spin(self):
         while True:
@@ -128,8 +215,8 @@ class DVnode:
                     if ord(byte0) == int('0x0D', 16) and ord(byte1) == int('0xA4', 16):
                         i = 0
                         while len(data) < size + 5:
-                            print "looping: ",i
-                            i+=1
+                            print "Waiting for more udp data, current retry: ", i
+                            i += 1
                             data += self.sock.recv(65507)
                         container = opendavinci_pb2.odcore_data_MessageContainer()
                         container.ParseFromString(data[5:])
@@ -160,11 +247,16 @@ class DVnode:
             except:
                 print("Unexpected error:", sys.exc_info()[0])
 
-
-
     def getKnownMessageIDs(self):
+        """
+        returns all yet received message ID's since the program runs
+        """
         return self.knownIDs
 
     @staticmethod
     def spin():
+        """
+        Causes the program to go into IDLE mode.. but keeps program running. Function is blocking.
+        Doesn't needs to be called
+        """
         signal.pause()
