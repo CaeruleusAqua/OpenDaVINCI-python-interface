@@ -15,7 +15,9 @@
 // Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
 // When using protoc version 3 or higher, enable the syntax line below.
-// syntax = "proto2";
+syntax = "proto2";
+
+
 
 
 

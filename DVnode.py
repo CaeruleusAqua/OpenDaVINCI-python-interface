@@ -15,16 +15,18 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import numpy as np
+import datetime
 import posix_ipc
 import signal
 import socket
 import struct
+import sys
 import sysv_ipc
 import thread
-import datetime
 
-import comma_pb2
+import numpy as np
+
+import opendavinci_pb2
 
 
 class DVnode:
@@ -36,6 +38,7 @@ class DVnode:
         self.connected = False
         self.callbacks = dict()
         self.imageCallbacks = dict()
+        self.containerCallbacks = list()
         self.knownIDs = list()
         self.sock = None
 
@@ -52,13 +55,40 @@ class DVnode:
             thread.start_new_thread(self.__spin, ())
             self.run = True
 
+    def publish(self, container):
+        data = container.SerializeToString()
+        header = self.__get_od_header(len(data))
+        tosend = header + data
+        self.sock.sendto(tosend, (self.MCAST_GRP, self.MCAST_PORT))
+
+    @staticmethod
+    def __get_od_header(size):
+        a = struct.pack("<B", *bytearray([0x0D, ]))
+        b = struct.pack("<L", ((size & 0xFFFFFF) << 8) | (0xA4))
+        return a+b
+
+
     def registerCallback(self, msgID, func, msgType, params=()):
         assert hasattr(func, '__call__')
         self.callbacks[msgID] = (func, msgType, params)
 
+    def registerContainerCallback(self, func):
+        self.containerCallbacks.append(func)
+
     def registerImageCallback(self, name, func, params=()):
         assert hasattr(func, '__call__')
         self.imageCallbacks[str(name)] = (func, params)
+
+    @staticmethod
+    def writeToFile(container, filename):
+        buf = container.SerializeToString()
+        with open(filename, "ab") as myfile:
+            size = len(buf)
+            a = struct.pack("<B", *bytearray([0x0D, ]))
+            myfile.write(a)
+            b = struct.pack("<L", ((size & 0xFFFFFF) << 8) | (0xA4))
+            myfile.write(b)
+            myfile.write(buf)
 
     @staticmethod
     def __getCRC32(string):
@@ -87,36 +117,50 @@ class DVnode:
         callback[0](tmp, stapms, *callback[1])
 
     def __spin(self):
-        data = self.sock.recv(2048)
         while True:
-            if len(data) > 5:  # LENGTH_OPENDAVINCI_HEADER = 5
-                byte0 = data[0]
-                byte1 = data[1]
+            try:
+                data = self.sock.recv(65507)
+                if len(data) > 5:  # LENGTH_OPENDAVINCI_HEADER = 5
+                    byte0 = data[0]
+                    byte1 = data[1]
+                    size = (struct.unpack('<L', data[1:5])[0] >> 8)
+                    # Check for OpenDaVINCI header.
+                    if ord(byte0) == int('0x0D', 16) and ord(byte1) == int('0xA4', 16):
+                        i = 0
+                        while len(data) < size + 5:
+                            print "looping: ",i
+                            i+=1
+                            data += self.sock.recv(65507)
+                        container = opendavinci_pb2.odcore_data_MessageContainer()
+                        container.ParseFromString(data[5:])
+                        for callback in self.containerCallbacks:
+                            thread.start_new_thread(callback, (container,))
+                        if container.dataType not in self.knownIDs:
+                            self.knownIDs.append(container.dataType)
+                        if container.dataType in self.callbacks.keys():
+                            msg = self.callbacks[container.dataType][1]()
+                            msg.ParseFromString(container.serializedData)
+                            send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
+                                    microseconds=container.sent.microseconds)
+                            received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(
+                                    microseconds=container.received.microseconds)
+                            timestamps = [send, received]
+                            thread.start_new_thread(self.callbacks[container.dataType][0], (msg, timestamps) + (self.callbacks[container.dataType][2]))
 
-                # Check for OpenDaVINCI header.
-                if ord(byte0) == int('0x0D', 16) and ord(byte1) == int('0xA4', 16):
-                    container = comma_pb2.Container()
-                    container.ParseFromString(data[5:])
-                    if container.dataType not in self.knownIDs:
-                        self.knownIDs.append(container.dataType)
-                    if container.dataType in self.callbacks.keys():
-                        msg = self.callbacks[container.dataType][1]()
-                        msg.ParseFromString(container.serializedData)
-                        send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(microseconds=container.sent.microseconds)
-                        received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(microseconds=container.received.microseconds)
-                        timestamps = [send, received]
-                        thread.start_new_thread(self.callbacks[container.dataType][0], (msg, timestamps) + (self.callbacks[container.dataType][2]))
+                        if container.dataType == 14:
+                            msg = opendavinci_pb2.odcore_data_image_SharedImage()
+                            msg.ParseFromString(container.serializedData)
+                            send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
+                                    microseconds=container.sent.microseconds)
+                            received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(
+                                    microseconds=container.received.microseconds)
+                            timestamps = [send, received]
+                            if msg.name in self.imageCallbacks.keys():
+                                thread.start_new_thread(self.__threadedImageConverter, (msg, timestamps, self.imageCallbacks[msg.name]))
+            except:
+                print("Unexpected error:", sys.exc_info()[0])
 
-                    if container.dataType == 14:
-                        msg = comma_pb2.SharedImage()
-                        msg.ParseFromString(container.serializedData)
-                        send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(microseconds=container.sent.microseconds)
-                        received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(microseconds=container.received.microseconds)
-                        timestamps = [send, received]
-                        if msg.name in self.imageCallbacks.keys():
-                            thread.start_new_thread(self.__threadedImageConverter, (msg, timestamps, self.imageCallbacks[msg.name]))
 
-            data = self.sock.recv(2048)
 
     def getKnownMessageIDs(self):
         return self.knownIDs
