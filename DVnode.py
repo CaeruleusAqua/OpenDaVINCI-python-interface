@@ -70,7 +70,9 @@ class DVnode:
         return retVal
 
     def __threadedImageConverter(self, msg, stapms, callback):
-        name = "/" + msg.name.replace("/", "_")
+        # FIXME: incorporate _POSIX_NAME_MAX if available instead of constant 14, also the fallback to 12 if not defined
+        MAX_NAME_LENGTH = 14
+        name = str("/" + msg.name.replace("/", "_"))[:MAX_NAME_LENGTH]
         sem = posix_ipc.Semaphore(str(name))
         sm = sysv_ipc.SharedMemory(self.__getCRC32(name))
         sem.acquire()
