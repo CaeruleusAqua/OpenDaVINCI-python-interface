@@ -1,0 +1,1 @@
+from wgs84 import WGS84Coordinate
