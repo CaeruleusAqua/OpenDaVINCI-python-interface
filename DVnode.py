@@ -57,7 +57,7 @@ class DVnode:
         assert cid <= 255
         self.MCAST_PORT = port
         self.MCAST_GRP = "225.0.0." + str(cid)
-        self.run = False  #TODO Remove this... becuase --> unused
+        self.run = False  # TODO Remove this... becuase --> unused
         self.threadLimit = 4
         self.connected = False
         self.callbacks = dict()
@@ -141,6 +141,14 @@ class DVnode:
         msg.ParseFromString(container.serializedData)
         return msg
 
+    def getMessageName(self, id):
+        try:
+            msg = self.proto_dict[id]()
+            name = str(msg.DESCRIPTOR.full_name)
+        except:
+            name = "unkown"
+        return name
+
     def registerCallback(self, msgID, func, params=()):
         """
         Registers a new Callback function
@@ -171,7 +179,7 @@ class DVnode:
             msgType = self.proto_dict[msgID]
             self.callbacks[msgID] = (func, msgType, params)
 
-    def registerContainerCallback(self, func):
+    def registerContainerCallback(self, func, params=()):
         """
         Registers a new Callback function, but callback receives container and you have to deserialize the message by yourself,
         usefull if you want to record the data  using the writeToFile function
@@ -185,7 +193,7 @@ class DVnode:
             Callback function to be called
         """
         assert hasattr(func, '__call__')
-        self.containerCallbacks.append(func)
+        self.containerCallbacks.append([func,params])
 
     def registerImageCallback(self, name, func, params=()):
         """
@@ -261,15 +269,14 @@ class DVnode:
     def __threadedContainerHandler(self, queue):
         while True:
             container = queue.get()
-            if container.dataType !=8:
+            if container.dataType != 8:
                 self.__handleContainer(container)
-
 
             queue.task_done()
 
     def __handleContainer(self, container):
-        for callback in self.containerCallbacks:
-            callback(container)
+        for callback, params in self.containerCallbacks:
+            callback(container, *params)
 
         if container.dataType in self.callbacks.keys():
             msg = self.callbacks[container.dataType][1]()

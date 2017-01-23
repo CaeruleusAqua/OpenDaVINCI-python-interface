@@ -65,13 +65,27 @@ def hzCallback(msg, timeStamps):
     hz_lock.release()
 
 
+hz_dict = dict()
+def hzContainerCallback(container):
+    global hz_lock, hz_dict
+
+    if container.dataType in hz_dict.keys():
+        hz_lock.acquire()
+        hz_dict[container.dataType] += 1
+        hz_lock.release()
+    else:
+        hz_lock.acquire()
+        hz_dict[container.dataType] = 1
+        hz_lock.release()
+
+
+
 node = DVnode.DVnode(cid=cid)
 
 if sys.argv[2] == "echo":
     if len(sys.argv) == 3:
         node.non_threaded = True
         node.registerContainerCallback(echoContainer)
-
     else:
         msg_ids = map(int, sys.argv[3].split(','))
         for msg_id in msg_ids:
@@ -81,9 +95,20 @@ if sys.argv[2] == "echo":
     node.spin()
 
 elif sys.argv[2] == "list":
+    node.registerContainerCallback(hzContainerCallback)
     node.connect()
     while True:
-        print(node.getKnownMessageIDs())
+        print("Currently known messages:")
+        messages = node.getKnownMessageIDs()
+        for msg in messages:
+            hz_lock.acquire()
+            if msg in hz_dict.keys():
+                print("ID: " + str(msg) + "\t  --> " + str(hz_dict[msg]) + " Hz\t -->  " + str(node.getMessageName(msg)))
+                hz_dict[msg]=0
+            else:
+                print("ID: " + str(msg) + "\t  --> " + str(0) + " Hz\t -->  " + str(node.getMessageName(msg)))
+            hz_lock.release()
+        print("")
         sleep(1)
 
 elif sys.argv[2] == "hz":
