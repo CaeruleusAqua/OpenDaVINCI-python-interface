@@ -27,7 +27,7 @@ from import_file import import_file
 
 from internal.logger import Logger
 
-if len(sys.argv) < 3:
+if len(sys.argv) < 2:
     Logger.logError("Missing Parameters, minimum number of parameter is 2!")
     Logger.logInfo("Usage: ")
     Logger.logInfo("       $ autogen_proto.py protofolder1 protofolder2")
