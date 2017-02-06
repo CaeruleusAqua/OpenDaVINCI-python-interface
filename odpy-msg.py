@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # OpenDaVINCI - Portable middleware for distributed components.
 # Copyright (C) 2016  Julian-B. Scholle
 #
@@ -23,7 +23,7 @@ from time import sleep
 import DVnode
 
 if len(sys.argv) < 3:
-    print("\033[1;31;40mError: Missing Parameters, minimum number of parameter is 1 \033[0;37;40m")
+    print("\033[1;31;40mError: Missing Parameters, minimum number of parameter is 3 \033[0;37;40m")
     print("Usage: ")
     print("       $ odpy-msg.py cid [echo|list]")
     print("")

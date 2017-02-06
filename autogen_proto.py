@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # OpenDaVINCI - Portable middleware for distributed components.
 # Copyright (C) 2016  Julian-B. Scholle
 #
@@ -25,13 +25,24 @@ from distutils.spawn import find_executable
 
 from import_file import import_file
 
+from internal.logger import Logger
+
+if len(sys.argv) < 3:
+    Logger.logError("Missing Parameters, minimum number of parameter is 2!")
+    Logger.logInfo("Usage: ")
+    Logger.logInfo("       $ autogen_proto.py protofolder1 protofolder2")
+    Logger.logInfo("")
+    Logger.logInfo("One of the protofiles must contain the odcore_data_MessageContainer message, if not the process will fail!", color=Logger.YELLOW)
+    Logger.logInfo("")
+    sys.exit(-1)
+
 
 class ProtoBuild():
     def __init__(self):
         self.protoc = self.find_protoc()
 
     def find_protoc(self):
-        "Locates protoc executable"
+        """Locates protoc executable"""
 
         if 'PROTOC' in os.environ and os.path.exists(os.environ['PROTOC']):
             protoc = os.environ['PROTOC']
@@ -39,15 +50,14 @@ class ProtoBuild():
             protoc = find_executable('protoc')
 
         if protoc is None:
-            sys.stderr.write('protoc not found. Is protobuf-compiler installed? \n'
-                             'Alternatively, you can point the PROTOC environment variable at a local version.')
+            Logger.logError('protoc not found. Is protobuf-compiler installed? \n'
+                            'Alternatively, you can set the PROTOC environment variable to a local version.')
             sys.exit(1)
-
         return protoc
 
     def run(self, protopath, protofile):
         proto = os.path.join(protopath, protofile)
-        sys.stderr.write('Protobuf-compiling ' + proto + '\n')
+        Logger.logInfo('Protobuf-compiling: ' + proto)
         subprocess.check_call([self.protoc, '--python_out=./proto/.', proto, "--proto_path=" + str(protopath)])  # --proto_path
         output = os.path.join("proto", protofile.replace('.proto', '_pb2.py'))
         return ["proto", protofile.replace('.proto', '_pb2.py')]
@@ -72,8 +82,11 @@ for path in range(1, len(sys.argv)):
                         message = lines[line_nr + 1].split(" ")[1]
                         proto_dict[id] = [str(proto_python_file), str(message)]
 
+if not 0 in proto_dict.keys():
+    Logger.logError("ID: 0 --> odcore_data_MessageContainer not found in Protofiles!! Can't continue..")
+    sys.exit(-1)
 
-if not proto_dict.has_key(0):
-    sys.stderr.write("ID: 0 --> odcore_data_MessageContainer not found in Protofiles!! Can't continue..")
-#print proto_dict
 pickle.dump(proto_dict, open("proto_dict.p", "wb"))
+Logger.logInfo('')
+Logger.logInfo('Succesfully written new database to proto_dict.p!', color=Logger.GREEN)
+Logger.logInfo(str(len(proto_dict.keys())) + " messages found!", color=Logger.GREEN)

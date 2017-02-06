@@ -20,7 +20,7 @@
 __license__ = "GNU General Public License"
 __docformat__ = 'reStructuredText'
 
-import Queue
+
 import datetime
 import pickle
 import posix_ipc
@@ -33,16 +33,18 @@ import threading
 
 from import_file import import_file
 
-from internal import Logger
+from internal.logger import Logger
 
 # prints whether python is version 3 or not
 python_version = sys.version_info.major
 if python_version == 3:
     Logger.logInfo("OpenDaVINCI running under Python 3.x")
     import _thread as thread
+    import queue as Queue
 else:
     Logger.logInfo("OpenDaVINCI running under Python 2.x")
     import thread as thread
+    import Queue
 
 import numpy as np
 
@@ -124,6 +126,20 @@ class DVnode:
         data = container.SerializeToString()
         header = self.__get_od_header(len(data))
         tosend = header + data
+        self.sock.sendto(tosend, (self.MCAST_GRP, self.MCAST_PORT))
+
+    def publish_raw(self, string):
+        """
+        Publishes data using OpenDaVINCI, this is the python equivalent to getConference().send(container);
+
+
+        Parameters
+        ----------
+        string : opendavinci_pb2.odcore_data_MessageContainer().SerializeToString()
+            string to publish
+        """
+        header = self.__get_od_header(len(string))
+        tosend = header + string
         self.sock.sendto(tosend, (self.MCAST_GRP, self.MCAST_PORT))
 
     @staticmethod

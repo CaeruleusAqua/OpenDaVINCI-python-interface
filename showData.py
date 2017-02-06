@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # OpenDaVINCI - Portable middleware for distributed components.
 # Copyright (C) 2016  Julian-B. Scholle
 #
@@ -35,7 +35,7 @@ def testImageCallback(image, timeStamps):
 
 
 node = DVnode.DVnode(cid=111)
-print node.proto_dict.keys()
+print(node.proto_dict.keys())
 node.registerCallback(8, testCallback)
 node.connect()
 node.spin()
