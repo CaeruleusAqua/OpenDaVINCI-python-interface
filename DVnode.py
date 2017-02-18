@@ -20,9 +20,8 @@
 __license__ = "GNU General Public License"
 __docformat__ = 'reStructuredText'
 
-
 import datetime
-import pickle
+import os
 import posix_ipc
 import signal
 import socket
@@ -34,6 +33,7 @@ import threading
 from import_file import import_file
 
 from internal.logger import Logger
+import json
 
 # prints whether python is version 3 or not
 python_version = sys.version_info.major
@@ -59,6 +59,7 @@ class DVnode:
         assert cid <= 255
         self.MCAST_PORT = port
         self.MCAST_GRP = "225.0.0." + str(cid)
+        Logger.logInfo("Starting with CID: " + str(cid) + " !")
         self.run = False  # TODO Remove this... becuase --> unused
         self.threadLimit = 4
         self.connected = False
@@ -69,10 +70,16 @@ class DVnode:
         self.sock = None
         self.modules = dict()
         self.Logger = Logger
+        self.path = os.path.dirname(os.path.abspath(__file__))
         try:
-            self.proto_string_dict = pickle.load(open("proto_dict.p", "rb"))
+            with open(os.path.join(self.path, "proto_dict.json"), 'r') as fp:
+                tmp_proto_string_dict = json.load(fp)
+                self.proto_string_dict = dict()
+                ## correcting keys to int , since json does't support numbers
+                for key in tmp_proto_string_dict.keys():
+                    self.proto_string_dict[int(key)] = tmp_proto_string_dict[key]
         except:
-            self.Logger.logError(" proto_dict.p not found! Run autogen_proto.py first!")
+            self.Logger.logError(" proto_dict.json not found! Run autogen_proto.py first!")
             sys.exit(-1)
         self.proto_dict = dict()
         self.Logger.logInfo("Loading " + str(len(self.proto_string_dict.keys())) + " Messages..")
@@ -209,7 +216,7 @@ class DVnode:
             Callback function to be called
         """
         assert hasattr(func, '__call__')
-        self.containerCallbacks.append([func,params])
+        self.containerCallbacks.append([func, params])
 
     def registerImageCallback(self, name, func, params=()):
         """
@@ -298,9 +305,9 @@ class DVnode:
             msg = self.callbacks[container.dataType][1]()
             msg.ParseFromString(container.serializedData)
             send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
-                    microseconds=container.sent.microseconds)
+                microseconds=container.sent.microseconds)
             received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(
-                    microseconds=container.received.microseconds)
+                microseconds=container.received.microseconds)
             timestamps = [send, received]
             self.callbacks[container.dataType][0](msg, timestamps, *self.callbacks[container.dataType][2])
 
@@ -308,9 +315,9 @@ class DVnode:
             msg = self.proto_dict[14]()
             msg.ParseFromString(container.serializedData)
             send = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
-                    microseconds=container.sent.microseconds)
+                microseconds=container.sent.microseconds)
             received = datetime.datetime.fromtimestamp(timestamp=container.received.seconds) + datetime.timedelta(
-                    microseconds=container.received.microseconds)
+                microseconds=container.received.microseconds)
             timestamps = [send, received]
             if msg.name in self.imageCallbacks.keys():
                 self.__ImageConverter(msg, timestamps, self.imageCallbacks[msg.name])

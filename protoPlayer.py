@@ -86,16 +86,19 @@ with open(sys.argv[2], "rb") as f:
                 container = MessageContainer()
                 container.ParseFromString(buffer)
                 if lasttimestamp is None:
-                    lasttimestamp = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
-                            microseconds=container.sent.microseconds)
+                    lasttimestamp = datetime.datetime.fromtimestamp(
+                        timestamp=container.sent.seconds) + datetime.timedelta(
+                        microseconds=container.sent.microseconds)
                     lasttime = datetime.datetime.now()
                 else:
                     newtime = datetime.datetime.fromtimestamp(timestamp=container.sent.seconds) + datetime.timedelta(
-                            microseconds=container.sent.microseconds)
+                        microseconds=container.sent.microseconds)
                     deltatime = ((newtime - lasttimestamp).total_seconds()) / float(speed)
                     time_to_wait = deltatime - (datetime.datetime.now() - lasttime).total_seconds()
                     if time_to_wait < 0:
-                        Logger.logWarn("Can't play at commanded speed!")
+                        Logger.logWarn("Timestamp is " + str(round(time_to_wait,4)) + " seconds in the past. Skipping Timestamp processing for one message!")
+                    elif time_to_wait > 1/speed:
+                        Logger.logWarn("Very low rate detected! Skipping Timestamp processing for one message, to prevent blocking!")
                     else:
                         time.sleep(time_to_wait)
                     lasttimestamp = newtime
