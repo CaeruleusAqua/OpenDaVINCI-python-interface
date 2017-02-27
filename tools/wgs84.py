@@ -1,16 +1,20 @@
 from math import sqrt, cos, sin, pi as PI
 
 
-class Point2D:
-    def __init__(self, x, y):
+class Point3:
+    def __init__(self, x, y,z=0):
         self.x = x
         self.y = y
+        self.z = z
 
     def getY(self):
         return self.y
 
     def getX(self):
         return self.x
+
+    def getZ(self):
+        return self.z
 
 
 class WGS84Coordinate:
@@ -70,24 +74,24 @@ class WGS84Coordinate:
         return result
 
     def transformToWGS84XY(self, x, y):
-        coordinate = Point2D(x, y)
-        return self.transform(coordinate, 1e-2)
+        coordinate = Point3(x, y)
+        return self.transformToWGS84(coordinate, 1e-2)
 
-    def transformToWGS84(self, coordinate):
-        return self.transform(coordinate, 1e-2)
+    def transform(self, coordinate):
+        result = self.fwd(coordinate.getLatitude() * self.deg2rad, coordinate.getLongitude() * self.deg2rad)
+        return Point3(result[0], result[1], 0)
 
-    def transformToWGS84(self, coordinate, accuracy):
+    def transformToWGS84(self, coordinate, accuracy=1e-2):
         result = WGS84Coordinate(self.getLatitude(), self.getLongitude())
+
         addLon = 1e-5
         signLon = -1 if (coordinate.getX() < 0) else 1
         addLat = 1e-5
-
         signLat = -1 if (coordinate.getY() < 0) else 1
 
         epsilon = accuracy
         if (epsilon < 0):
             epsilon = 1e-2
-
         point3Result = self.transform(result)
         dOld = float("inf")
         d = abs(coordinate.getY() - point3Result.getY())
@@ -95,7 +99,7 @@ class WGS84Coordinate:
 
         # while ((d < dOld) & & (d > epsilon) & & (iterations < 50000)) {
         while (d < dOld) and (d > epsilon):
-            result = WGS84Coordinate(result.m_latitude + signLat * addLat, result.getLatitude())
+            result = WGS84Coordinate(result.getLatitude() + signLat * addLat, result.getLongitude())
             point3Result = self.transform(result)
             dOld = d
             d = abs(coordinate.getY() - point3Result.getY())
@@ -108,7 +112,7 @@ class WGS84Coordinate:
 
         # while ((d < dOld) & & (d > epsilon) & & (iterations < 50000)) {
         while (d < dOld) and (d > epsilon):
-            result = WGS84Coordinate(result.m_latitude, result.getLongitude() + signLon * addLon)
+            result = WGS84Coordinate(result.getLatitude(), result.getLongitude() + signLon * addLon)
             point3Result = self.transform(result)
             dOld = d
             d = abs(coordinate.getX() - point3Result.getX())
