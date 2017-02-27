@@ -74,6 +74,7 @@ Go to python-opendavinci and run autogen_proto.py, append paths to protofiles se
     
 The output should look like this:
 
+    OpenDaVINCI running under Python 2.7
     Protobuf-compiling: /opt/od4/share/proto/odvdopendlv.proto
     Protobuf-compiling: /opt/od4/share/proto/odvdcommaai.proto
     Protobuf-compiling: /opt/od4/share/proto/automotivedata.proto
@@ -86,7 +87,7 @@ The output should look like this:
     Protobuf-compiling: /opt/opendlv.core/share/proto/odvdvehicle.proto
     Protobuf-compiling: /opt/opendlv.core/share/proto/odvdopendlvdatamodel.proto
     
-    Succesfully written new database to proto_dict.p!
+    Succesfully written new database to proto_dict.json!
     100 messages found!
 
  
@@ -154,7 +155,8 @@ for example:
 
 
 ### protoPlayer
-The protoPlayer is a python implementation of odplayer. This is not yet feature complete. Playing Video and SharedMemory objects is not implemented
+The protoPlayer is a python implementation of odplayer. This is not yet feature complete. Playing Video and SharedMemory objects is not implemented.
+But instead of odplayer, protoPlayer is able to play recordings with broken timestamps (you will get warnings).
 
 The syntax is as follows:
 
